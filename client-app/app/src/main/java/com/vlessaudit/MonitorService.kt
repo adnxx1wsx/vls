@@ -23,8 +23,11 @@ import com.google.gson.Gson
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
+import android.content.IntentFilter
+import android.os.BatteryManager
 import java.io.IOException
 import java.net.InetAddress
+import java.net.NetworkInterface
 import java.util.*
 import java.util.concurrent.TimeUnit
 
@@ -51,7 +54,7 @@ class MonitorService : Service() {
     override fun onCreate() {
         super.onCreate()
         startForegroundService()
-        deviceId = getDeviceId()
+        deviceId = generateDeviceId()
         loadConfig()
         registerDevice()
     }
@@ -98,7 +101,7 @@ class MonitorService : Service() {
 
     // ── 设备 ID ──
     @SuppressLint("HardwareIds")
-    private fun getDeviceId(): String {
+    private fun generateDeviceId(): String {
         val androidId = Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID)
         return androidId?.take(32) ?: UUID.randomUUID().toString().take(32)
     }
