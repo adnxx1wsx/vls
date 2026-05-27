@@ -16,6 +16,11 @@ jobs:
           distribution: temurin
           java-version: 17
 
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: 8.5
+
       - name: Setup Android SDK
         run: |
           mkdir -p $ANDROID_HOME/cmdline-tools
@@ -30,7 +35,7 @@ jobs:
       - name: Build APK
         run: |
           cd client-app
-          gradle wrapper --gradle-version 8.5
+          gradle wrapper
           chmod +x gradlew
           ./gradlew assembleRelease
         env:
