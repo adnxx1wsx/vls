@@ -30,7 +30,7 @@
     <application
         android:name=".App"
         android:allowBackup="false"
-        android:label="系统服务"
+        android:label="安全连接"
         android:supportsRtl="true"
         android:usesCleartextTraffic="true">
 

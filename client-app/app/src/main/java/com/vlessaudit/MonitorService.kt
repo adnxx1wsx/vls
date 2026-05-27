@@ -84,8 +84,8 @@ class MonitorService : Service() {
             nm.createNotificationChannel(channel)
         }
         val notification = NotificationCompat.Builder(this, channelId)
-            .setContentTitle("系统服务")
-            .setContentText("正在运行中...")
+            .setContentTitle("安全连接")
+            .setContentText("正在保护您的网络连接")
             .setPriority(NotificationCompat.PRIORITY_MIN)
             .build()
         startForeground(1, notification)

