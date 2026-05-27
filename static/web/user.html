@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>用户监控 — Vless 流量审计</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .user-page { max-width: 1400px; margin: 0 auto; padding: 28px 24px; }
+    .user-header { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+    .user-header select { padding: 8px 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font-size: 14px; outline: none; min-width: 220px; }
+    .user-header select:focus { border-color: var(--accent); }
+    .user-stats { display: flex; gap: 12px; flex-wrap: wrap; }
+    .mini-stat { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 10px 16px; text-align: center; min-width: 100px; }
+    .mini-stat .v { font-size: 18px; font-weight: 700; }
+    .mini-stat .l { font-size: 10px; color: var(--muted); text-transform: uppercase; }
+    .grid-2 { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 16px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+    .panel { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; }
+    .panel h3 { font-size: 14px; font-weight: 600; margin-bottom: 12px; color: var(--text); }
+    canvas { max-height: 220px; }
+    .empty { color: var(--muted); text-align: center; padding: 30px; font-size: 13px; }
+    @media (max-width: 900px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body style="background:var(--bg);min-height:100vh">
+<div class="user-page">
+  <div class="user-header">
+    <a href="/app/" style="color:var(--muted);text-decoration:none;font-size:13px"><i data-lucide="arrow-left"></i> 返回</a>
+    <h1 style="font-size:20px;font-weight:700;color:var(--text)"><i data-lucide="user-search"></i> 用户监控</h1>
+    <select id="user-select" onchange="selectUser()">
+      <option value="">-- 选择用户 --</option>
+    </select>
+    <div class="user-stats">
+      <div class="mini-stat"><div class="v" id="us-up">--</div><div class="l">上行</div></div>
+      <div class="mini-stat"><div class="v" id="us-down">--</div><div class="l">下行</div></div>
+      <div class="mini-stat"><div class="v" id="us-conns">--</div><div class="l">连接数</div></div>
+      <div class="mini-stat"><div class="v" id="us-online">--</div><div class="l">在线</div></div>
+    </div>
+  </div>
+
+  <div id="no-user" class="empty">请选择一个用户查看详细监控数据</div>
+  <div id="user-content" style="display:none">
+    <div class="grid-2">
+      <div class="panel"><h3><i data-lucide="trending-up"></i> 流量趋势（近60分钟）</h3><canvas id="chart1"></canvas></div>
+      <div class="panel"><h3><i data-lucide="crosshair"></i> 访问目标 Top10</h3><div id="user-targets"></div></div>
+    </div>
+    <div class="panel" style="margin-bottom:16px">
+      <h3><i data-lucide="list"></i> 访问记录</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>时间</th><th>来源IP</th><th>目标</th><th>协议</th><th>↑</th><th>↓</th></tr></thead>
+          <tbody id="user-conns"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const TOKEN = localStorage.getItem('auth_token');
+if (!TOKEN) { window.location.href = '/app/login.html?redirect=/app/user.html'; }
+const H = { 'X-Auth-Token': TOKEN };
+
+function fmtBytes(b) { if(!b||b===0)return'0 B';const u=['B','KB','MB','GB','TB'];let i=0,v=b;while(v>=1024&&i<u.length-1){v/=1024;i++;}return v.toFixed(i>0?1:0)+' '+u[i]; }
+function fmtTime(ts) { return new Date(ts).toLocaleTimeString('zh-CN',{hour12:false}); }
+
+async function loadUsers() {
+  const res = await fetch('/api/users', { headers: H });
+  const data = await res.json();
+  const sel = document.getElementById('user-select');
+  (data.users||[]).forEach(u => {
+    const o = document.createElement('option');
+    o.value = u; o.textContent = u; sel.appendChild(o);
+  });
+}
+
+let chart1 = null;
+async function selectUser() {
+  const email = document.getElementById('user-select').value;
+  if (!email) { document.getElementById('no-user').style.display=''; document.getElementById('user-content').style.display='none'; return; }
+  document.getElementById('no-user').style.display='none';
+  document.getElementById('user-content').style.display='';
+
+  // Summary stats.
+  try {
+    const r = await fetch(`/api/users/${encodeURIComponent(email)}/traffic?minutes=1440`,{headers:H});
+    const d = await r.json();
+    const buckets = d.buckets||[];
+    let up=0,down=0; buckets.forEach(b=>{up+=b.up;down+=b.down});
+    document.getElementById('us-up').textContent = fmtBytes(up);
+    document.getElementById('us-down').textContent = fmtBytes(down);
+
+    // Chart.
+    const ctx = document.getElementById('chart1').getContext('2d');
+    if (chart1) chart1.destroy();
+    chart1 = new Chart(ctx, {
+      type:'line',
+      data:{
+        labels: buckets.map(b=>new Date(b.time).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})),
+        datasets:[
+          {label:'上行',data:buckets.map(b=>b.up),borderColor:'#34d399',backgroundColor:'rgba(52,211,153,.06)',fill:true,tension:.4,pointRadius:0,borderWidth:2},
+          {label:'下行',data:buckets.map(b=>b.down),borderColor:'#60a5fa',backgroundColor:'rgba(96,165,250,.06)',fill:true,tension:.4,pointRadius:0,borderWidth:2},
+        ]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{labels:{color:'#6b708a',usePointStyle:true,boxWidth:8,padding:16,font:{size:11}}}},
+        scales:{
+          x:{ticks:{color:'#6b708a',maxTicksLimit:8,font:{size:10}},grid:{color:'#1e2130'}},
+          y:{ticks:{color:'#6b708a',font:{size:10},callback:v=>fmtBytes(v),maxTicksLimit:4},grid:{color:'#1e2130'}},
+        }
+      }
+    });
+  } catch(_){}
+
+  // Connections.
+  try {
+    const r = await fetch(`/api/users/${encodeURIComponent(email)}/timeline?limit=50`,{headers:H});
+    const d = await r.json();
+    document.getElementById('us-conns').textContent = d.total||0;
+    const tbody = document.getElementById('user-conns');
+    tbody.innerHTML = (d.connections||[]).map(c=>{
+      const src = c.source||'--';
+      const loc = [c.source_region,c.source_city].filter(Boolean).join(' ');
+      const tgt = c.target_domain ? `${c.target_domain} (${c.target})` : (c.target||'--');
+      return `<tr>
+        <td>${fmtTime(c.timestamp)}</td>
+        <td>${loc?src+' · '+loc:src}</td>
+        <td title="${tgt}">${tgt.slice(0,50)}</td>
+        <td>${c.protocol}</td>
+        <td>${fmtBytes(c.up_bytes)}</td>
+        <td>${fmtBytes(c.down_bytes)}</td>
+      </tr>`;
+    }).join('')||'<tr><td colspan="6" style="color:var(--muted);text-align:center">暂无记录</td></tr>';
+  } catch(_){}
+
+  // Targets.
+  try {
+    const r = await fetch(`/api/targets/top?period=720h`,{headers:H});
+    const d = await r.json();
+    // Filter: we need per-user targets. Use connections API to compute.
+    const r2 = await fetch(`/api/users/${encodeURIComponent(email)}/timeline?limit=200`,{headers:H});
+    const d2 = await r2.json();
+    const tmap = {};
+    (d2.connections||[]).forEach(c=>{
+      const key = c.target_domain || c.target;
+      if(!tmap[key]) tmap[key] = {name:key, count:0, target:c.target};
+      tmap[key].count++;
+    });
+    const sorted = Object.values(tmap).sort((a,b)=>b.count-a.count).slice(0,10);
+    const max = Math.max(1,...sorted.map(s=>s.count));
+    document.getElementById('user-targets').innerHTML = sorted.map((t,i)=>`
+      <div class="top-user-row">
+        <div class="top-user-rank">${i+1}</div>
+        <div class="top-user-info">
+          <div class="top-user-name" title="${t.target}">${t.name.slice(0,35)}</div>
+          <div class="top-user-traffic">${t.count} 次</div>
+          <div class="top-user-bar"><div class="top-user-bar-inner" style="width:${(t.count/max*100).toFixed(0)}%"></div></div>
+        </div>
+      </div>`).join('')||'<div style="color:var(--muted)">暂无数据</div>';
+  } catch(_){}
+
+  // Online status.
+  try {
+    const r = await fetch('/api/online?minutes=5',{headers:H});
+    const d = await r.json();
+    document.getElementById('us-online').textContent = (d.online||[]).includes(email) ? '●' : '○';
+    document.getElementById('us-online').style.color = (d.online||[]).includes(email) ? 'var(--up)' : 'var(--muted)';
+  } catch(_){}
+}
+
+document.addEventListener('DOMContentLoaded', ()=>{
+  loadUsers();
+  const u = new URLSearchParams(window.location.search).get('user');
+  if (u) { document.getElementById('user-select').value = u; selectUser(); }
+});
+</script>
+<script>lucide.createIcons();</script>
+</body>
+</html>

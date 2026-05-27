@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>申请连接 — Vless 流量审计</title>
+  <style>
+    :root {
+      --bg: #09090b; --bg-card: #12141c; --border: #1e2130;
+      --text: #ecedf0; --muted: #6b708a; --accent: #818cf8;
+      --up: #34d399; --gradient-1: #818cf8; --gradient-2: #a78bfa;
+      --radius: 14px; --radius-sm: 8px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      background-image:
+        radial-gradient(ellipse at 20% 0%, rgba(129,140,248,0.06) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 100%, rgba(244,114,182,0.04) 0%, transparent 50%);
+      color: var(--text); min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      -webkit-font-smoothing: antialiased;
+    }
+    .card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 36px; width: 480px; max-width: 92vw;
+    }
+    .card h1 { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+    .card .sub { color: var(--muted); font-size: 13px; margin-bottom: 24px; }
+    .card label { display: block; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
+    .card input {
+      width: 100%; padding: 11px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+      background: var(--bg); color: var(--text); font-size: 14px; outline: none; margin-bottom: 16px;
+      transition: border-color .2s;
+    }
+    .card input:focus { border-color: var(--accent); }
+    .card button {
+      width: 100%; padding: 12px; border: none; border-radius: var(--radius-sm);
+      background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2));
+      color: #fff; font-size: 15px; font-weight: 600; cursor: pointer;
+      transition: transform .15s, box-shadow .15s;
+    }
+    .card button:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(129,140,248,0.4); }
+    .result { margin-top: 20px; padding: 16px; background: rgba(52,211,153,0.06); border: 1px solid rgba(52,211,153,0.25); border-radius: var(--radius-sm); display: none; }
+    .result h3 { color: var(--up); font-size: 14px; margin-bottom: 10px; }
+    .result code {
+      display: block; background: var(--bg); padding: 10px 14px; border-radius: 6px;
+      font-size: 11px; word-break: break-all; color: var(--text); margin-bottom: 10px;
+    }
+    .result .copy { background: var(--accent); border: none; color: #fff; padding: 6px 14px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+    .error { color: #ef4444; font-size: 13px; margin-top: 8px; display: none; }
+    .lookup-link { display: block; text-align: center; margin-top: 16px; color: var(--muted); font-size: 12px; cursor: pointer; }
+    .lookup-link:hover { color: var(--accent); }
+    .lookup-box { display: none; margin-top: 12px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>🔑 申请 VLESS 连接</h1>
+    <p class="sub">仅供内部使用 · 严格保密 · 不得分享</p>
+
+    <label>姓名 / 昵称</label>
+    <input id="display-name" placeholder="输入你的姓名或昵称" autofocus>
+
+    <label>邮箱 / 用户名</label>
+    <input id="email" placeholder="输入你的邮箱或用户名">
+
+    <label>申请口令</label>
+    <input type="password" id="secret" placeholder="输入申请口令">
+
+    <button onclick="register()">申 请 连 接</button>
+    <div class="error" id="error"></div>
+
+    <div class="result" id="result">
+      <h3>✅ 申请成功！</h3>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:6px">你的专属 VLESS 连接串（点击复制）：</p>
+      <code id="vless-url"></code>
+      <button class="copy" onclick="copyIt()">📋 一键复制</button>
+    </div>
+
+    <div class="lookup-link" onclick="document.getElementById('lookup-box').style.display='block'">
+      已有账号？查询连接信息
+    </div>
+    <div class="lookup-box" id="lookup-box">
+      <label>输入已有邮箱查询</label>
+      <input id="lookup-email" placeholder="你的邮箱">
+      <button onclick="lookup()" style="margin-top:0">查 询</button>
+    </div>
+  </div>
+
+  <script>
+    async function register() {
+      const name = document.getElementById('display-name').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const secret = document.getElementById('secret').value.trim();
+      if (!email) { showErr('请输入邮箱'); return; }
+      if (!secret) { showErr('请输入申请口令'); return; }
+      try {
+        const res = await fetch('/api/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, display_name: name, secret }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showResult(data);
+        } else {
+          showErr(data.error || '申请失败');
+        }
+      } catch(e) { showErr('网络错误'); }
+    }
+
+    async function lookup() {
+      const email = document.getElementById('lookup-email').value.trim();
+      if (!email) return;
+      try {
+        const res = await fetch('/api/register/' + encodeURIComponent(email));
+        const data = await res.json();
+        if (res.ok) {
+          showResult(data);
+        } else {
+          showErr(data.error || '未找到');
+        }
+      } catch(e) { showErr('网络错误'); }
+    }
+
+    function showResult(data) {
+      document.getElementById('error').style.display = 'none';
+      document.getElementById('vless-url').textContent = data.vless_url;
+      document.getElementById('result').style.display = 'block';
+    }
+
+    function showErr(msg) {
+      document.getElementById('result').style.display = 'none';
+      const e = document.getElementById('error');
+      e.textContent = msg; e.style.display = 'block';
+    }
+
+    function copyIt() {
+      const url = document.getElementById('vless-url').textContent;
+      navigator.clipboard.writeText(url).then(() => {
+        const btn = event.target;
+        btn.textContent = '✅ 已复制';
+        setTimeout(() => btn.textContent = '📋 一键复制', 2000);
+      });
+    }
+
+    document.getElementById('email').addEventListener('keydown', e => {
+      if (e.key === 'Enter') register();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+*.exe
+*.exe~
+vless-audit-deploy.tar.gz
+vless-audit-test.db
+xray-test/
+dist/
+deploy/bin/
+access.log
+error.log
+*.db-journal
+*.db-wal
+*.db-shm
+__pycache__/
+node_modules/
+.DS_Store

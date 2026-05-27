@@ -1,0 +1,43 @@
+name: Build APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Setup Android SDK
+        run: |
+          mkdir -p $ANDROID_HOME/cmdline-tools
+          curl -L -o /tmp/cmdline-tools.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+          unzip -q /tmp/cmdline-tools.zip -d $ANDROID_HOME/cmdline-tools
+          mv $ANDROID_HOME/cmdline-tools/cmdline-tools $ANDROID_HOME/cmdline-tools/latest
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses >/dev/null
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-34" "build-tools;34.0.0"
+        env:
+          ANDROID_HOME: /opt/android-sdk
+
+      - name: Build APK
+        run: |
+          cd client-app
+          gradle wrapper --gradle-version 8.5
+          chmod +x gradlew
+          ./gradlew assembleRelease
+        env:
+          ANDROID_HOME: /opt/android-sdk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: vless-audit-apk
+          path: client-app/app/build/outputs/apk/release/app-release.apk

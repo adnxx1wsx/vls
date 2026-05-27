@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vless 流量审计</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="/app/" class="logo"><i data-lucide="activity" class="nav-icon"></i><span>流量审计</span></a>
+  <div class="nav-links">
+    <a href="/app/" class="active"><i data-lucide="layout-dashboard"></i> 仪表盘</a>
+    <a href="/app/user.html"><i data-lucide="user-search"></i> 用户监控</a>
+    <a href="/app/logs.html"><i data-lucide="file-text"></i> 日志</a>
+    <a href="/app/register.html"><i data-lucide="user-plus"></i> 申请</a>
+  </div>
+</nav>
+
+<div class="app">
+  <div class="stat-row">
+    <div class="stat-card">
+      <div class="icon"><i data-lucide="arrow-up-circle"></i></div>
+      <div class="label">今日上行</div>
+      <div class="value" id="today-up">--</div>
+      <div class="sub" id="rate-up">--</div>
+    </div>
+    <div class="stat-card">
+      <div class="icon"><i data-lucide="arrow-down-circle"></i></div>
+      <div class="label">今日下行</div>
+      <div class="value" id="today-down">--</div>
+      <div class="sub" id="rate-down">--</div>
+    </div>
+    <div class="stat-card">
+      <div class="icon"><i data-lucide="users"></i></div>
+      <div class="label">在线用户</div>
+      <div class="value" id="online-count">0</div>
+      <div class="sub">最近 5 分钟</div>
+    </div>
+    <div class="stat-card">
+      <div class="icon"><i data-lucide="bar-chart-3"></i></div>
+      <div class="label">今日连接</div>
+      <div class="value" id="conn-today">--</div>
+      <div class="sub" id="storage-info">--</div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h3><i data-lucide="trending-up"></i> 流量趋势 <span style="font-weight:400;font-size:11px;color:var(--muted)">近 60 分钟</span></h3>
+      <canvas id="trafficChart"></canvas>
+    </div>
+    <div class="card">
+      <div class="tabs">
+        <button class="active" onclick="switchTab('users')"><i data-lucide="user"></i> 用户排行</button>
+        <button onclick="switchTab('targets')"><i data-lucide="crosshair"></i> 目标排行</button>
+      </div>
+      <div id="top-users" class="rank-list"></div>
+      <div id="top-targets" class="rank-list" style="display:none"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3><i data-lucide="list"></i> 实时连接</h3>
+    <div class="toolbar">
+      <select id="user-filter"><option value="">全部用户</option></select>
+      <input type="text" id="search-target" placeholder="搜索目标地址 ..." style="width:170px" oninput="loadConnections()">
+      <button class="btn-primary" id="refresh-btn"><i data-lucide="refresh-cw"></i> 刷新</button>
+      <button class="btn-ghost" id="export-btn"><i data-lucide="download"></i> 导出 CSV</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>时间</th><th>用户</th><th>来源 IP</th><th>目标</th><th>协议</th><th>上行</th><th>下行</th><th>耗时</th><th>状态</th></tr></thead>
+        <tbody id="conn-tbody"></tbody>
+      </table>
+    </div>
+    <div class="pagination" id="pagination"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="user-modal" style="display:none">
+  <div class="modal-box">
+    <span class="modal-close" onclick="closeModal()"><i data-lucide="x"></i></span>
+    <h3 id="modal-title"><i data-lucide="user"></i> 用户详情</h3>
+    <div style="height:180px;margin-bottom:16px"><canvas id="modalChart"></canvas></div>
+    <table><thead><tr><th>时间</th><th>来源 IP</th><th>目标</th><th>协议</th><th>上行</th><th>下行</th></tr></thead><tbody id="modal-tbody"></tbody></table>
+  </div>
+</div>
+
+<footer class="footer-bar" id="storage-footer">--</footer>
+
+<script src="app.js"></script>
+<script>lucide.createIcons();</script>
+</body>
+</html>

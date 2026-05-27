@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>登录 — Vless 流量审计</title>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    :root {
+      --bg: #09090b;
+      --bg-card: #12141c;
+      --border: #1e2130;
+      --text: #ecedf0;
+      --muted: #6b708a;
+      --accent: #818cf8;
+      --gradient-1: #818cf8;
+      --gradient-2: #a78bfa;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      background-image:
+        radial-gradient(ellipse at 20% 0%, rgba(129,140,248,0.06) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 100%, rgba(244,114,182,0.04) 0%, transparent 50%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      -webkit-font-smoothing: antialiased;
+    }
+    .login-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 40px;
+      width: 380px;
+      max-width: 90vw;
+      text-align: center;
+    }
+    .login-box h1 {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .login-box p { color: var(--muted); font-size: 13px; margin-bottom: 24px; }
+    .login-box input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+      outline: none;
+      transition: border-color .2s;
+      text-align: center;
+    }
+    .login-box input:focus { border-color: var(--accent); }
+    .login-box button {
+      width: 100%;
+      margin-top: 16px;
+      padding: 12px;
+      border: none;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2));
+      color: #fff;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform .15s, box-shadow .15s;
+    }
+    .login-box button:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(129,140,248,0.4); }
+    .error { color: #ef4444; font-size: 13px; margin-top: 12px; display: none; }
+  </style>
+</head>
+<body>
+  <div class="login-box">
+    <h1><i data-lucide="shield-check" style="width:26px;height:26px;vertical-align:-5px;margin-right:8px;color:var(--accent)"></i>Vless 流量审计</h1>
+    <p>请输入登录密码</p>
+    <input type="password" id="password" placeholder="密码" autofocus>
+    <button onclick="login()"><i data-lucide="log-in"></i> 登 录</button>
+    <div class="error" id="error">密码错误</div>
+  </div>
+  <script>
+    const REDIRECT = new URLSearchParams(window.location.search).get('redirect') || '/app/';
+    async function login() {
+      const pwd = document.getElementById('password').value;
+      if (!pwd) return;
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password: pwd }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          localStorage.setItem('auth_token', data.token);
+          window.location.href = REDIRECT;
+        } else {
+          document.getElementById('error').style.display = 'block';
+        }
+      } catch (e) {
+        document.getElementById('error').style.display = 'block';
+      }
+    }
+    document.getElementById('password').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') login();
+    });
+    if (localStorage.getItem('auth_token')) {
+      window.location.href = REDIRECT;
+    }
+  </script>
+  <script>lucide.createIcons();</script>
+</body>
+</html>

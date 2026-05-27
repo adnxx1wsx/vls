@@ -1,0 +1,12 @@
+{
+  "listen": ":8080",
+  "db_path": "./vless-audit-test.db",
+  "xray_api": "127.0.0.1:10086",
+  "access_log": "vless-audit/xray-test/access.log",
+  "poll_interval_sec": 5,
+  "retention_days": 30,
+  "auth_token": "258d6c7ddc1baf2119902e816d0dc137",
+  "xray_config_path": "vless-audit/xray-test/server-config.json",
+  "xray_bin_path": "vless-audit/xray-test/xray.exe",
+  "register_secret": "test123"
+}

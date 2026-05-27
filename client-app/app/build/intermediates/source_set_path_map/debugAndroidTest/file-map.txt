@@ -1,0 +1,4 @@
+com.vlessaudit.test.app-androidTest-0 E:\发明专利工作材料\Jb\fqdy\vless-audit\client-app\app\build\generated\res\resValues\androidTest\debug
+com.vlessaudit.test.app-mergeDebugAndroidTestResources-1 E:\发明专利工作材料\Jb\fqdy\vless-audit\client-app\app\build\intermediates\incremental\debugAndroidTest\mergeDebugAndroidTestResources\merged.dir
+com.vlessaudit.test.app-mergeDebugAndroidTestResources-2 E:\发明专利工作材料\Jb\fqdy\vless-audit\client-app\app\build\intermediates\incremental\debugAndroidTest\mergeDebugAndroidTestResources\stripped.dir
+com.vlessaudit.test.app-merged_res-3 E:\发明专利工作材料\Jb\fqdy\vless-audit\client-app\app\build\intermediates\merged_res\debugAndroidTest

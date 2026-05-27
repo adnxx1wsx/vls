@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>日志查看 — Vless 流量审计</title>
+  <style>
+    :root { --bg:#09090b;--bg-card:#12141c;--border:#1e2130;--text:#ecedf0;--muted:#6b708a;--accent:#818cf8;--up:#34d399;--radius:14px;--radius-sm:8px; }
+    * { box-sizing:border-box;margin:0;padding:0; }
+    body { font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased; }
+    .page { max-width:1200px;margin:0 auto;padding:28px 24px; }
+    .top { display:flex;align-items:center;gap:16px;margin-bottom:20px;flex-wrap:wrap; }
+    .top a { color:var(--muted);text-decoration:none;font-size:13px; }
+    .top h1 { font-size:20px;font-weight:700; }
+    .toolbar { display:flex;gap:10px;margin-bottom:12px;align-items:center; }
+    .toolbar button,.toolbar select { padding:8px 14px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;cursor:pointer;outline:none; }
+    .toolbar button { background:var(--accent);border-color:var(--accent);color:#fff;font-weight:500; }
+    .toolbar select:focus { border-color:var(--accent); }
+    .log-box { background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;font-family:'JetBrains Mono','Fira Code','Consolas',monospace;font-size:12px;line-height:1.7;max-height:70vh;overflow:auto;white-space:pre-wrap;word-break:break-all; }
+    .log-box .ts { color:var(--muted); }
+    .log-box .email { color:var(--accent); }
+    .log-box .target { color:var(--down); }
+  </style>
+</head>
+<body>
+<div class="page">
+  <div class="top">
+    <a href="/app/">← 返回</a>
+    <h1>📄 访问日志</h1>
+    <span style="color:var(--muted);font-size:12px" id="file-info"></span>
+  </div>
+  <div class="toolbar">
+    <select id="lines-select">
+      <option value="100">最近 100 行</option>
+      <option value="200" selected>最近 200 行</option>
+      <option value="500">最近 500 行</option>
+      <option value="1000">最近 1000 行</option>
+    </select>
+    <button onclick="refresh()">🔄 刷新</button>
+    <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer">
+      <input type="checkbox" id="auto-refresh" onchange="toggleAuto()"> 自动刷新
+    </label>
+  </div>
+  <div class="log-box" id="log-content">加载中...</div>
+</div>
+
+<script>
+const TOKEN = localStorage.getItem('auth_token');
+if (!TOKEN) { window.location.href = '/app/login.html?redirect=/app/logs.html'; }
+const H = { 'X-Auth-Token': TOKEN };
+
+let autoTimer = null;
+
+function toggleAuto() {
+  if (document.getElementById('auto-refresh').checked) {
+    autoTimer = setInterval(refresh, 3000);
+  } else {
+    clearInterval(autoTimer);
+  }
+}
+
+async function refresh() {
+  const lines = document.getElementById('lines-select').value;
+  try {
+    const res = await fetch(`/api/logs/access?lines=${lines}`, { headers: H });
+    const data = await res.json();
+    document.getElementById('file-info').textContent = data.file || '';
+    const content = (data.lines||[]).map(line => {
+      // Highlight timestamp, email, and target.
+      return line
+        .replace(/^(\d{4}\/\d{2}\/\d{2}\s+\d{2}:\d{2}:\d{2}(?:\.\d+)?)/, '<span class="ts">$1</span>')
+        .replace(/email:\s*(\S+)/g, 'email: <span class="email">$1</span>')
+        .replace(/accepted\s+(\S+)/, 'accepted <span class="target">$1</span>');
+    }).join('\n');
+    document.getElementById('log-content').innerHTML = content || '<span style="color:var(--muted)">暂无日志</span>';
+    document.getElementById('log-content').scrollTop = document.getElementById('log-content').scrollHeight;
+  } catch(e) {
+    document.getElementById('log-content').textContent = '加载失败';
+  }
+}
+
+document.addEventListener('DOMContentLoaded', refresh);
+</script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+R_DEF: Internal format may change without notice
+local
+id auth_token
+id server_url
+id start_btn
+layout activity_main
