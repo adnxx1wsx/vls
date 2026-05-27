@@ -37,6 +37,7 @@ jobs:
           cd client-app
           gradle wrapper
           chmod +x gradlew
+          unset ANDROID_SDK_ROOT
           ./gradlew assembleRelease
         env:
           ANDROID_HOME: /opt/android-sdk
