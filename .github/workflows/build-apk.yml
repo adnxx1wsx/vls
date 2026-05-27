@@ -38,7 +38,7 @@ jobs:
           gradle wrapper
           chmod +x gradlew
           unset ANDROID_SDK_ROOT
-          ./gradlew assembleRelease
+          ./gradlew assembleDebug
         env:
           ANDROID_HOME: /opt/android-sdk
 
@@ -49,4 +49,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: vless-audit-apk
-          path: client-app/app/build/outputs/apk/release/*.apk
+          path: client-app/app/build/outputs/apk/debug/*.apk
