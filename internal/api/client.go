@@ -2,7 +2,9 @@ package api
 
 import (
 	"fmt"
+	"net"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -25,19 +27,39 @@ func (h *Handler) DeviceRegister(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	// Auto-create VLESS user if linked to a known email.
-	if d.UserEmail != "" {
-		u, _ := h.Store.GetUser(d.UserEmail)
-		if u == nil {
-			h.Store.CreateUser(&model.VLESSUser{
-				Email:  d.UserEmail,
-				UUID:   generateUUID(),
-				Level:  0,
-				Enable: true,
-			})
-		}
+	// Auto-create VLESS user for this device.
+	email := d.UserEmail
+	if email == "" {
+		email = d.DeviceID + "@device"
 	}
-	c.JSON(http.StatusOK, gin.H{"status": "ok", "device_id": d.DeviceID})
+	u, _ := h.Store.GetUser(email)
+	var vlessUUID string
+	if u != nil {
+		vlessUUID = u.UUID
+	} else {
+		vlessUUID = generateUUID()
+		h.Store.CreateUser(&model.VLESSUser{
+			Email:  email,
+			UUID:   vlessUUID,
+			Level:  0,
+			Enable: true,
+		})
+	}
+
+	// Build VLESS connection URL.
+	host := c.Request.Host
+	if h, _, err := net.SplitHostPort(host); err == nil {
+		host = h
+	}
+	vlessURL := fmt.Sprintf("vless://%s@%s:443?encryption=none&security=tls&type=ws&path=/ws#%s",
+		vlessUUID, host, url.QueryEscape(email))
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":    "ok",
+		"device_id": d.DeviceID,
+		"uuid":      vlessUUID,
+		"vless_url": vlessURL,
+	})
 }
 
 // ReportTelemetry handles POST /api/client/report — periodic telemetry.
