@@ -42,8 +42,11 @@ jobs:
         env:
           ANDROID_HOME: /opt/android-sdk
 
+      - name: List build outputs
+        run: find client-app/app/build/outputs -name "*.apk" 2>/dev/null || true
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: vless-audit-apk
-          path: client-app/app/build/outputs/apk/release/app-release.apk
+          path: client-app/app/build/outputs/apk/release/*.apk
