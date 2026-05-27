@@ -10,17 +10,26 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Vless Audit"
+        android:text="VlessAudit"
         android:textColor="#7c88f8"
         android:textSize="22sp"
         android:textStyle="bold"
+        android:layout_marginBottom="4dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="代理 + 监控一体"
+        android:textColor="#5c617a"
+        android:textSize="13sp"
         android:layout_marginBottom="24dp" />
 
     <EditText
         android:id="@+id/server_url"
         android:layout_width="match_parent"
         android:layout_height="48dp"
-        android:hint="服务器地址 (http://IP:8080)"
+        android:hint="服务器地址"
+        android:text="http://24.144.82.214:8080"
         android:textColor="#edf0f5"
         android:textColorHint="#5c617a"
         android:background="@drawable/input_bg"
@@ -37,8 +46,30 @@
         android:textColorHint="#5c617a"
         android:background="@drawable/input_bg"
         android:padding="12dp"
-        android:layout_marginBottom="20dp"
+        android:layout_marginBottom="16dp"
         android:inputType="textPassword" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="20dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="VLESS 代理"
+            android:textColor="#edf0f5"
+            android:textSize="14sp" />
+
+        <Switch
+            android:id="@+id/vless_switch"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:checked="true" />
+    </LinearLayout>
 
     <Button
         android:id="@+id/start_btn"
@@ -46,5 +77,23 @@
         android:layout_height="48dp"
         android:text="启动服务"
         android:textColor="#fff"
-        android:background="@drawable/btn_bg" />
+        android:background="@drawable/btn_bg"
+        android:layout_marginBottom="8dp" />
+
+    <Button
+        android:id="@+id/stop_btn"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:text="停止"
+        android:textColor="#ef4444"
+        android:background="@drawable/input_bg"
+        android:layout_marginBottom="16dp" />
+
+    <TextView
+        android:id="@+id/status_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="○ 未启动"
+        android:textColor="#5c617a"
+        android:textSize="13sp" />
 </LinearLayout>
